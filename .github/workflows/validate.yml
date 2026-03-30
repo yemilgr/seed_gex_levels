@@ -1,20 +1,65 @@
 name: Validate Pine Seeds data
 
-on: [push]
+on:
+  push:
+    paths:
+      - 'data/**'
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Validate CSV format
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate all CSV files
         run: |
           python3 -c "
-          import csv, sys
-          with open('data/TSLA/data.csv') as f:
-              reader = csv.DictReader(f)
-              assert 'time' in reader.fieldnames, 'Missing time column'
-              for row in reader:
-                  assert int(row['time']) > 0, 'Invalid timestamp'
-          print('Validation passed')
+          import csv, sys, os
+          from pathlib import Path
+
+          REQUIRED_COLS = [
+              'time', 'pin_price', 'pin2_price', 'pin_score',
+              'call1_price', 'call1_score', 'call2_price', 'call2_score',
+              'call3_price', 'call3_score', 'put1_price', 'put1_score',
+              'put2_price', 'put2_score', 'put3_price', 'put3_score',
+              'hvl_price', 'iv_rank', 'pinning_prob', 'breakout_risk',
+          ]
+
+          errors = []
+          data_dir = Path('data')
+
+          if not data_dir.exists():
+              print('No data/ directory yet — skipping.')
+              sys.exit(0)
+
+          for csv_file in data_dir.glob('*/data.csv'):
+              print(f'Checking {csv_file}...')
+              with open(csv_file) as f:
+                  reader = csv.DictReader(f)
+                  cols = reader.fieldnames or []
+                  missing = [c for c in REQUIRED_COLS if c not in cols]
+                  if missing:
+                      errors.append(f'{csv_file}: missing columns {missing}')
+                      continue
+                  for i, row in enumerate(reader, 1):
+                      try:
+                          ts = int(row['time'])
+                          assert ts > 1_600_000_000, f'timestamp too old: {ts}'
+                          for col in REQUIRED_COLS[1:]:
+                              float(row[col])
+                      except Exception as e:
+                          errors.append(f'{csv_file} row {i}: {e}')
+
+          if errors:
+              print('VALIDATION FAILED:')
+              for e in errors:
+                  print(f'  {e}')
+              sys.exit(1)
+
+          print('All CSV files valid.')
           "
