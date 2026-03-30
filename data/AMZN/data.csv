@@ -1,0 +1,2 @@
+time,pin_price,pin2_price,pin_score,call1_price,call1_score,call2_price,call2_score,call3_price,call3_score,put1_price,put1_score,put2_price,put2_score,put3_price,put3_score,hvl_price,iv_rank,pinning_prob,breakout_risk
+1774828800,200.0,202.5,0.9801,205.0,0.9713,202.5,0.9166,207.5,0.9059,197.5,0.7456,195.0,0.7242,190.0,0.6324,202.5,50.0,2,0
