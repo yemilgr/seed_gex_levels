@@ -1,0 +1,20 @@
+name: Validate Pine Seeds data
+
+on: [push]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Validate CSV format
+        run: |
+          python3 -c "
+          import csv, sys
+          with open('data/TSLA/data.csv') as f:
+              reader = csv.DictReader(f)
+              assert 'time' in reader.fieldnames, 'Missing time column'
+              for row in reader:
+                  assert int(row['time']) > 0, 'Invalid timestamp'
+          print('Validation passed')
+          "
